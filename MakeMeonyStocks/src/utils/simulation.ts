@@ -43,6 +43,12 @@ function supplement(position: Position, quote: Quote | null, addQty: number, add
   const warnings: string[] = [];
   if (exposureChangePct > 30) warnings.push(`補倉使風險敞口增加 ${exposureChangePct}%`);
   if (addPrice > currentPrice) warnings.push("在更高價格補倉恐提高回本難度");
+  // risk coefficient: composite of exposure delta and price premium vs current
+  const premiumPct = Number((((addPrice - currentPrice) / Math.max(currentPrice, 1e-6)) * 100).toFixed(2));
+  const baseRisk = 40; // neutral baseline
+  const rc = Math.max(5, Math.min(95, baseRisk + exposureChangePct * 0.8 + Math.max(0, premiumPct) * 1.2 - Math.max(0, -premiumPct) * 0.6));
+  const target = Number((newCost * 1.15).toFixed(4));
+  const stop = Number((newCost * 0.85).toFixed(4));
   return {
     breakEvenPrice: Number(newCost.toFixed(4)),
     profitLoss: resultPnl,
@@ -50,6 +56,9 @@ function supplement(position: Position, quote: Quote | null, addQty: number, add
     exposureChangePct,
     curve: curve({ ...position, costPrice: newCost, quantity: newQty }, currentPrice),
     warnings,
+    riskCoefficient: Number(rc.toFixed(2)),
+    targetPrice: target,
+    stopPrice: stop,
   };
 }
 
@@ -60,6 +69,8 @@ function swap(position: Position, quote: Quote | null, sellQty: number): Simulat
   const remainPnl = Number(((currentPrice - position.costPrice) * remainQty).toFixed(2));
   const warnings: string[] = [];
   if (remainQty === 0) warnings.push("完全退出：請確保換入標的與風險承受一致");
+  const baseRisk = 35;
+  const rc = Math.max(5, Math.min(95, baseRisk - reducedExposurePct * 0.5));
   return {
     breakEvenPrice: position.costPrice,
     profitLoss: remainPnl,
@@ -67,6 +78,9 @@ function swap(position: Position, quote: Quote | null, sellQty: number): Simulat
     exposureChangePct: -reducedExposurePct,
     curve: curve({ ...position, quantity: remainQty }, currentPrice),
     warnings,
+    riskCoefficient: Number(rc.toFixed(2)),
+    targetPrice: Number((position.costPrice * 1.12).toFixed(4)),
+    stopPrice: Number((position.costPrice * 0.9).toFixed(4)),
   };
 }
 
@@ -74,6 +88,7 @@ function hold(position: Position, quote: Quote | null): SimulationResult {
   const currentPrice = quote?.price ?? position.costPrice;
   const resultPnl = pnlAtPrice(position, currentPrice);
   const warnings: string[] = [];
+  const baseRisk = resultPnl < 0 ? 32 : 24;
   return {
     breakEvenPrice: position.costPrice,
     profitLoss: resultPnl,
@@ -81,6 +96,9 @@ function hold(position: Position, quote: Quote | null): SimulationResult {
     exposureChangePct: 0,
     curve: curve(position, currentPrice),
     warnings,
+    riskCoefficient: baseRisk,
+    targetPrice: Number((position.costPrice * 1.1).toFixed(4)),
+    stopPrice: Number((position.costPrice * 0.92).toFixed(4)),
   };
 }
 

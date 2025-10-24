@@ -82,6 +82,10 @@ export interface SimulationResult {
   exposureChangePct?: number; // risk delta when supplement/swap
   curve?: CurvePoint[]; // simple P/L curve for optimistic/neutral/pessimistic ranges
   warnings?: string[]; // risk messages
+  // added for enhanced supplement scenario visualization
+  riskCoefficient?: number; // 0..100 composite risk metric
+  targetPrice?: number; // suggested take-profit reference
+  stopPrice?: number; // suggested stop-loss reference
 }
 
 export interface PlanAction {

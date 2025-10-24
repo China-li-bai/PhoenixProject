@@ -8,6 +8,9 @@ import type {
 } from "./types";
 import { getDiagnostics } from "./services/data";
 import { runSimulation } from "./utils/simulation";
+import { playStepDone } from "./utils/audio";
+// add differentiated audio cues
+import { playSimulateDone, playPlanSaved } from "./utils/audio";
 
 export const useAppStore = defineStore("app", {
   state: () => ({
@@ -56,6 +59,11 @@ export const useAppStore = defineStore("app", {
         quote: this.state.diagnostics.quote,
         strategy: this.state.strategy,
       });
+      // 停留在模擬步驟以便視覺化曲線/區間，提供前往計劃的按鈕
+      this.state.stage = "simulate";
+      try { playSimulateDone?.(); } catch {}
+    },
+    proceedToPlan() {
       this.state.stage = "plan";
     },
     buildDefaultPlan(): ExecutionPlan | null {
@@ -83,6 +91,7 @@ export const useAppStore = defineStore("app", {
       localStorage.setItem("phoenix_last_plan", JSON.stringify(this.state.plan));
       localStorage.setItem("phoenix_last_diagnostics", JSON.stringify(this.state.diagnostics));
       localStorage.setItem("phoenix_last_simulation", JSON.stringify(this.state.simulation));
+      try { playPlanSaved?.(); } catch {}
       this.state.stage = "review";
     },
     loadReviews() {

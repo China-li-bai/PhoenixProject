@@ -100,3 +100,17 @@ MCP 連接數據源： 連接到一個金融數據 API（如 Alpha Vantage, Yaho
 MCP 執行計算： 在後端執行補倉模擬、風險評估等複雜計算。
 MCP 驅動前端： 將計算結果和數據，通過 API 傳遞給一個用 React/Vue 構建的炫酷前端界面，實現我們設計的各個模塊。
 這個“Phoenix Project”將不僅僅是一個工具，它是一次對投資者心智的升級。
+
+---
+
+## 開發進度更新（Phoenix Project）
+
+- 狀態管理：已整合 Pinia 全局狀態（`src/main.ts`、`src/store.ts`），保留既有狀態結構與動作。
+- 組件化與過渡：完成四大模組（診斷、模擬、計劃、復盤），`App.vue` 以組件式佈局並加入淡入淡出過渡與步驟徽章。
+- 策略模擬（場景一：戰術性補倉）：
+  - 新增盈虧曲線 SVG 可視化（基於 `state.simulation.curve`），自動縮放價格與盈虧軸。
+  - 顯示 `breakEvenPrice`、`riskCoefficient`、`targetPrice`、`stopPrice` 指標。
+  - 以綠色半透明帶標示補倉中心 ±3% 區間（對應文檔 Step 2 的“戰術性補倉”可視化要求）。
+  - 模擬完成後保留在“模擬”階段便於分析，並提供「下一步：生成計劃」按鈕（`proceedToPlan`）。
+- 交互音效：區分模擬完成與計劃保存音效（`playSimulateDone`、`playPlanSaved`）。
+- 下一步計劃（對應 Step 3）：基於模擬結果生成預設執行計劃（價格觸發、止損/止盈）並完善時間軸與提醒；持續強化霓虹駕駛艙視覺（曲線發光、網格、刻度）。
