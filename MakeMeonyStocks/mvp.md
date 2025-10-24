@@ -103,14 +103,44 @@ MCP 驅動前端： 將計算結果和數據，通過 API 傳遞給一個用 Rea
 
 ---
 
-## 開發進度更新（Phoenix Project）
+## 數據流與數據結構設計（對應 58–88 步驟）
 
-- 狀態管理：已整合 Pinia 全局狀態（`src/main.ts`、`src/store.ts`），保留既有狀態結構與動作。
-- 組件化與過渡：完成四大模組（診斷、模擬、計劃、復盤），`App.vue` 以組件式佈局並加入淡入淡出過渡與步驟徽章。
-- 策略模擬（場景一：戰術性補倉）：
-  - 新增盈虧曲線 SVG 可視化（基於 `state.simulation.curve`），自動縮放價格與盈虧軸。
-  - 顯示 `breakEvenPrice`、`riskCoefficient`、`targetPrice`、`stopPrice` 指標。
-  - 以綠色半透明帶標示補倉中心 ±3% 區間（對應文檔 Step 2 的“戰術性補倉”可視化要求）。
-  - 模擬完成後保留在“模擬”階段便於分析，並提供「下一步：生成計劃」按鈕（`proceedToPlan`）。
-- 交互音效：區分模擬完成與計劃保存音效（`playSimulateDone`、`playPlanSaved`）。
-- 下一步計劃（對應 Step 3）：基於模擬結果生成預設執行計劃（價格觸發、止損/止盈）並完善時間軸與提醒；持續強化霓虹駕駛艙視覺（曲線發光、網格、刻度）。
+- 統一約定
+  - `SymbolId` 一律使用大寫字母；貨幣統一以 `USD` 表示。
+  - 比例數使用 `xxPct`（0..100），風險指標 `riskCoefficient`（0..100）。
+  - 階段枚舉為 `diagnose` → `simulate` → `plan` → `review`，全局狀態以 Pinia 管理。
+
+- Step 1 · 診斷（`diagnose()` → `state.diagnostics`）
+  - 輸入：`meta`（`symbol`、`costPrice`、`quantity`、`portfolioValue`）。
+  - 數據：`Quote`（實時/回退價格）、`Fundamentals`（三色健康度、ROE、負債率、營收YoY）、`Sentiment`（情緒分數與熱度）、`Position`（平均成本與股數）。
+  - 輸出：`Diagnostics { symbol, quote, fundamentals, sentiment, position }`。
+
+- Step 2 · 策略模擬（`simulate()` → `state.simulation`）
+  - 輸入：`Diagnostics`、`StrategyParams`（`hold`/`supplement`/`swap` 對應各自參數）。
+  - 數據：`SimulationResult` 統一包含：
+    - `breakEvenPrice`、`profitLoss`、`profitLossPct`、`exposureChangePct`、`warnings[]`。
+    - `curve: CurvePoint[]`（盈虧曲線）；`riskCoefficient`、`targetPrice`、`stopPrice`。
+  - 可視化：`StrategySimulator.vue` 以 SVG 呈現 P/L 曲線；對 `supplement` 顯示 `addPrice` ±3% 綠色帶區。
+
+- Step 3 · 執行計劃（`buildDefaultPlan()`/`savePlan()` → `state.plan` + `state.reviews`）
+  - 輸入：`Diagnostics`、`SimulationResult`。
+  - 數據：`ExecutionPlan { actions: PlanAction[], stopLoss, takeProfit }`；`PlanAction { label, triggerPrice, action, quantity }`。
+  - 行為：保存計劃時寫入本地存儲並追加 `ReviewRecord`，同時階段切換至 `review`。
+
+- Step 4 · 復盤與進化（`state.reviews`）
+  - 數據：`ReviewRecord { timestamp, decision, resultPnl, attribution{ beta, alpha, emotion, execution }, notes }`。
+  - 展示：時間線與歸因指標，對應閉環分析。
+
+- 狀態流轉與持久化
+  - 狀態流：`diagnose` → `nextToSimulate` → `simulate` → `proceedToPlan` → `savePlan` → `review`。
+  - 持久化鍵：`phoenix_reviews`、`phoenix_last_plan`、`phoenix_last_diagnostics`、`phoenix_last_simulation`。
+
+- 類型與文件映射（統一來源 `src/types.ts`）
+  - `Quote`、`Fundamentals`、`Sentiment`、`Position`、`Diagnostics`、`StrategyParams`、`SimulationResult`、`ExecutionPlan`、`ReviewRecord`、`AppState`。
+  - 實作位置：`src/store.ts`（動作/流轉）、`src/utils/simulation.ts`（模擬計算）、`src/services/data.ts`（數據獲取）。
+
+- 組件契約（資料讀寫一致）
+  - `DiagnosticMonitor.vue` 讀 `state.diagnostics`。
+  - `StrategySimulator.vue` 讀/寫 `state.strategy`，讀 `state.simulation`，觸發 `simulate()` 與 `proceedToPlan()`。
+  - `ExecutionPlan.vue` 讀 `state.simulation`，觸發 `savePlan()`。
+  - `ReviewEvolution.vue` 讀 `state.reviews`。
