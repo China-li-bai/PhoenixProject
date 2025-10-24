@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票解套工具 - 專業解套策略分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .input-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-section h2::before {
+            content: "📊";
+            margin-right: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .results-section {
+            background: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .results-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .results-section h2::before {
+            content: "📈";
+            margin-right: 10px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-card.loss {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+        }
+
+        .result-card.profit {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .result-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .result-value.loss {
+            color: #e74c3c;
+        }
+
+        .result-value.profit {
+            color: #27ae60;
+        }
+
+        .strategies-section {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            margin-top: 20px;
+        }
+
+        .strategies-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .strategies-section h2::before {
+            content: "💡";
+            margin-right: 10px;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .strategy-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .strategy-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .strategy-description {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .strategy-calculation {
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .warning::before {
+            content: "⚠️ ";
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .strategy-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>股票解套工具</h1>
+            <p>專業的股票解套策略分析，幫助您制定最佳投資決策</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2>股票信息輸入</h2>
+                <form id="stockForm">
+                    <div class="form-group">
+                        <label for="stockName">股票名稱/代碼</label>
+                        <input type="text" id="stockName" placeholder="例如：台積電 (2330)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="buyPrice">買入價格 (元)</label>
+                        <input type="number" id="buyPrice" step="0.01" placeholder="例如：580.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="buyQuantity">買入數量 (股)</label>
+                        <input type="number" id="buyQuantity" placeholder="例如：1000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currentPrice">當前價格 (元)</label>
+                        <input type="number" id="currentPrice" step="0.01" placeholder="例如：520.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="commission">手續費率 (%)</label>
+                        <input type="number" id="commission" step="0.001" value="0.1425" placeholder="0.1425">
+                    </div>
+                    
+                    <button type="submit" class="calculate-btn">計算解套方案</button>
+                </form>
+            </div>
+
+            <div class="results-section">
+                <h2>分析結果</h2>
+                <div id="results" class="hidden">
+                    <div class="result-card" id="currentStatus">
+                        <div class="result-title">當前狀況</div>
+                        <div class="result-value" id="statusValue">-</div>
+                    </div>
+                    
+                    <div class="result-card" id="lossAmount">
+                        <div class="result-title">虧損金額</div>
+                        <div class="result-value loss" id="lossValue">-</div>
+                    </div>
+                    
+                    <div class="result-card" id="lossPercentage">
+                        <div class="result-title">虧損比例</div>
+                        <div class="result-value loss" id="lossPercentValue">-</div>
+                    </div>
+                    
+                    <div class="result-card" id="breakEvenPrice">
+                        <div class="result-title">解套價格</div>
+                        <div class="result-value" id="breakEvenValue">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="strategies-section hidden" id="strategiesSection">
+            <h2>解套策略建議</h2>
+            <div class="strategy-grid" id="strategyGrid">
+                <!-- 策略卡片將由JavaScript動態生成 -->
+            </div>
+            
+            <div class="warning">
+                <strong>風險提示：</strong>股票投資有風險，以上建議僅供參考，不構成投資建議。請根據自身風險承受能力和市場情況做出投資決策。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class StockRescueTool {
+            constructor() {
+                this.form = document.getElementById('stockForm');
+                this.resultsSection = document.getElementById('results');
+                this.strategiesSection = document.getElementById('strategiesSection');
+                this.strategyGrid = document.getElementById('strategyGrid');
+                
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                this.form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.calculate();
+                });
+
+                // 實時計算
+                const inputs = this.form.querySelectorAll('input[type="number"]');
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => {
+                        if (this.isFormValid()) {
+                            this.calculate();
+                        }
+                    });
+                });
+            }
+
+            isFormValid() {
+                const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+                const buyQuantity = parseInt(document.getElementById('buyQuantity').value);
+                const currentPrice = parseFloat(document.getElementById('currentPrice').value);
+                
+                return buyPrice > 0 && buyQuantity > 0 && currentPrice > 0;
+            }
+
+            calculate() {
+                const stockName = document.getElementById('stockName').value || '未命名股票';
+                const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+                const buyQuantity = parseInt(document.getElementById('buyQuantity').value);
+                const currentPrice = parseFloat(document.getElementById('currentPrice').value);
+                const commission = parseFloat(document.getElementById('commission').value) / 100;
+
+                // 計算手續費
+                const buyCommission = buyPrice * buyQuantity * commission;
+                const sellCommission = currentPrice * buyQuantity * commission;
+                const totalCommission = buyCommission + sellCommission;
+
+                // 計算成本和當前價值
+                const totalCost = buyPrice * buyQuantity + buyCommission;
+                const currentValue = currentPrice * buyQuantity - sellCommission;
+                
+                // 計算損益
+                const profitLoss = currentValue - totalCost;
+                const profitLossPercentage = (profitLoss / totalCost) * 100;
+                
+                // 計算解套價格（考慮手續費）
+                const breakEvenPrice = (totalCost + sellCommission) / buyQuantity;
+
+                this.displayResults({
+                    stockName,
+                    buyPrice,
+                    buyQuantity,
+                    currentPrice,
+                    totalCost,
+                    currentValue,
+                    profitLoss,
+                    profitLossPercentage,
+                    breakEvenPrice,
+                    commission
+                });
+
+                this.generateStrategies({
+                    stockName,
+                    buyPrice,
+                    buyQuantity,
+                    currentPrice,
+                    profitLoss,
+                    profitLossPercentage,
+                    breakEvenPrice,
+                    totalCost
+                });
+            }
+
+            displayResults(data) {
+                const {
+                    stockName,
+                    profitLoss,
+                    profitLossPercentage,
+                    breakEvenPrice,
+                    currentPrice
+                } = data;
+
+                // 顯示結果區域
+                this.resultsSection.classList.remove('hidden');
+                this.resultsSection.classList.add('fade-in');
+
+                // 更新狀態
+                const statusElement = document.getElementById('statusValue');
+                const lossCard = document.getElementById('lossAmount');
+                const lossPercentCard = document.getElementById('lossPercentage');
+                
+                if (profitLoss >= 0) {
+                    statusElement.textContent = `${stockName} 目前盈利`;
+                    statusElement.className = 'result-value profit';
+                    lossCard.classList.add('profit');
+                    lossCard.classList.remove('loss');
+                    lossPercentCard.classList.add('profit');
+                    lossPercentCard.classList.remove('loss');
+                    document.querySelector('#lossAmount .result-title').textContent = '盈利金額';
+                    document.querySelector('#lossPercentage .result-title').textContent = '盈利比例';
+                } else {
+                    statusElement.textContent = `${stockName} 目前虧損`;
+                    statusElement.className = 'result-value loss';
+                    lossCard.classList.add('loss');
+                    lossCard.classList.remove('profit');
+                    lossPercentCard.classList.add('loss');
+                    lossPercentCard.classList.remove('profit');
+                    document.querySelector('#lossAmount .result-title').textContent = '虧損金額';
+                    document.querySelector('#lossPercentage .result-title').textContent = '虧損比例';
+                }
+
+                // 更新數值
+                document.getElementById('lossValue').textContent = 
+                    `${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString('zh-TW')} 元`;
+                document.getElementById('lossValue').className = 
+                    `result-value ${profitLoss >= 0 ? 'profit' : 'loss'}`;
+                
+                document.getElementById('lossPercentValue').textContent = 
+                    `${profitLossPercentage >= 0 ? '+' : ''}${profitLossPercentage.toFixed(2)}%`;
+                document.getElementById('lossPercentValue').className = 
+                    `result-value ${profitLossPercentage >= 0 ? 'profit' : 'loss'}`;
+                
+                document.getElementById('breakEvenValue').textContent = 
+                    `${breakEvenPrice.toFixed(2)} 元`;
+            }
+
+            generateStrategies(data) {
+                const {
+                    stockName,
+                    buyPrice,
+                    buyQuantity,
+                    currentPrice,
+                    profitLoss,
+                    profitLossPercentage,
+                    breakEvenPrice,
+                    totalCost
+                } = data;
+
+                this.strategiesSection.classList.remove('hidden');
+                this.strategiesSection.classList.add('fade-in');
+
+                const strategies = [];
+
+                if (profitLoss < 0) {
+                    // 虧損情況下的策略
+                    
+                    // 攤平策略
+                    const averageDownQuantity = Math.floor(buyQuantity * 0.5);
+                    const newAveragePrice = ((buyPrice * buyQuantity) + (currentPrice * averageDownQuantity)) / (buyQuantity + averageDownQuantity);
+                    const newBreakEvenPrice = newAveragePrice * 1.003; // 考慮手續費
+                    
+                    strategies.push({
+                        title: '攤平成本策略',
+                        description: `在當前價位再買入 ${averageDownQuantity.toLocaleString()} 股，可以降低平均成本。`,
+                        calculation: `新平均成本: ${newAveragePrice.toFixed(2)} 元\n新解套價格: ${newBreakEvenPrice.toFixed(2)} 元\n需要資金: ${(currentPrice * averageDownQuantity).toLocaleString()} 元`,
+                        risk: '中等風險'
+                    });
+
+                    // 止損策略
+                    const stopLossPrice = currentPrice * 0.95;
+                    const stopLossAmount = (stopLossPrice - buyPrice) * buyQuantity;
+                    
+                    strategies.push({
+                        title: '止損策略',
+                        description: `設定止損點在 ${stopLossPrice.toFixed(2)} 元，避免更大損失。`,
+                        calculation: `止損價格: ${stopLossPrice.toFixed(2)} 元\n預估損失: ${stopLossAmount.toLocaleString()} 元\n損失比例: ${((stopLossAmount / totalCost) * 100).toFixed(2)}%`,
+                        risk: '低風險'
+                    });
+
+                    // 分批賣出策略
+                    const partialSellQuantity = Math.floor(buyQuantity * 0.3);
+                    const remainingQuantity = buyQuantity - partialSellQuantity;
+                    const partialSellAmount = currentPrice * partialSellQuantity;
+                    
+                    strategies.push({
+                        title: '分批減倉策略',
+                        description: `先賣出 ${partialSellQuantity.toLocaleString()} 股回收部分資金，降低風險敞口。`,
+                        calculation: `賣出數量: ${partialSellQuantity.toLocaleString()} 股\n回收資金: ${partialSellAmount.toLocaleString()} 元\n剩餘持股: ${remainingQuantity.toLocaleString()} 股`,
+                        risk: '中低風險'
+                    });
+
+                    // 長期持有策略
+                    strategies.push({
+                        title: '長期持有策略',
+                        description: '如果對公司基本面有信心，可以考慮長期持有等待回升。',
+                        calculation: `解套目標: ${breakEvenPrice.toFixed(2)} 元\n需要上漲: ${((breakEvenPrice / currentPrice - 1) * 100).toFixed(2)}%\n持有成本: ${buyPrice.toFixed(2)} 元`,
+                        risk: '高風險'
+                    });
+
+                } else {
+                    // 盈利情況下的策略
+                    
+                    strategies.push({
+                        title: '獲利了結策略',
+                        description: '目前已經盈利，可以考慮部分或全部獲利了結。',
+                        calculation: `當前盈利: ${profitLoss.toLocaleString()} 元\n盈利比例: ${profitLossPercentage.toFixed(2)}%\n建議賣出: 50-100%`,
+                        risk: '低風險'
+                    });
+
+                    strategies.push({
+                        title: '設定止盈點',
+                        description: '設定止盈點鎖定利潤，同時保留上漲空間。',
+                        calculation: `建議止盈價: ${(currentPrice * 1.1).toFixed(2)} 元\n保護性止損: ${(buyPrice * 1.05).toFixed(2)} 元`,
+                        risk: '中低風險'
+                    });
+                }
+
+                this.renderStrategies(strategies);
+            }
+
+            renderStrategies(strategies) {
+                this.strategyGrid.innerHTML = '';
+                
+                strategies.forEach(strategy => {
+                    const strategyCard = document.createElement('div');
+                    strategyCard.className = 'strategy-card';
+                    strategyCard.innerHTML = `
+                        <div class="strategy-title">${strategy.title}</div>
+                        <div class="strategy-description">${strategy.description}</div>
+                        <div class="strategy-calculation">${strategy.calculation}</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #7f8c8d;">
+                            風險等級: ${strategy.risk}
+                        </div>
+                    `;
+                    this.strategyGrid.appendChild(strategyCard);
+                });
+            }
+        }
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            new StockRescueTool();
+        });
+    </script>
+</body>
+</html>
